@@ -18,7 +18,9 @@ N_w = int(16000 * 32 * 0.001)  # window length (samples).
 N_s = int(16000 * 16 * 0.001)  # window shift (samples).
 NFFT = int(pow(2, np.ceil(np.log2(N_w))))  # number of DFT components.
 
-with open('/home/anhbn/PycharmProjects/speech_server/denoise/data' + '/stats.p', 'rb') as f:
+root_path = os.getcwd()
+
+with open(f'{root_path}/data' + '/stats.p', 'rb') as f:
     stats = pickle.load(f)
 
 
@@ -89,9 +91,9 @@ class DeepXiNet:
 net = DeepXiNet()
 config = utils.gpu_config('0')
 with tf.Session(config=config) as sess:
-    net.saver.restore(sess, '/home/anhbn/PycharmProjects/speech_server/denoise/checkpoint_dir/epoch-173')
+    net.saver.restore(sess, f'{root_path}/checkpoint_dir/epoch-173')
 
-out_path = 'tmp'
+out_path = f'{root_path}/tmp'
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 
@@ -120,4 +122,5 @@ for j in range(len(test_x_len)):
         ValueError('NaN values found in enhanced speech.')
     if np.isinf(y).any():
         ValueError('Inf values found in enhanced speech.')
-    utils.save_wav('/home/anhbn/PycharmProjects/speech_server/output' + '/' + test_fnames[j] + '.wav', 16000, y)
+    utils.save_wav(out_path + '/' + test_fnames[j] + '.wav', 16000, y)
+
