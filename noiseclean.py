@@ -90,37 +90,39 @@ class DeepXiNet:
 
 net = DeepXiNet()
 config = utils.gpu_config('0')
-with tf.Session(config=config) as sess:
-    net.saver.restore(sess, f'{root_path}/checkpoint_dir/epoch-173')
 
 out_path = f'{root_path}/tmp'
 if not os.path.exists(out_path):
     os.makedirs(out_path)
+    
+with tf.Session(config=config) as sess:
+    net.saver.restore(sess, f'{root_path}/checkpoint_dir/epoch-173')
 
-test_x, test_x_len, test_snr, test_fnames = Batch("audio/", '*.wav', [])
-
-for j in range(len(test_x_len)):
-    input_feat = sess.run(net.infer_feat,
-                          feed_dict={net.s_ph: [test_x[j][0:test_x_len[j]]],
-                                     net.s_len_ph: [
-                                         test_x_len[j]]})  # sample of training set.
-
-    xi_mapped_hat = sess.run(net.infer_output, feed_dict={net.input_ph: input_feat[0],
-                                                          net.nframes_ph: input_feat[1],
-                                                          net.training_ph: False})
-    xi_dB_hat = np.add(np.multiply(np.multiply(stats['sigma_hat'], np.sqrt(2.0)),
-                                   spsp.erfinv(np.subtract(np.multiply(2.0, xi_mapped_hat), 1))),
-                       stats['mu_hat'])
-    xi_hat = np.power(10.0, np.divide(xi_dB_hat, 10.0))
-
-    y_MAG = np.multiply(input_feat[0], gain.gfunc(xi_hat, xi_hat + 1, gtype='mmse-lsa'))
-    y = np.squeeze(sess.run(net.y, feed_dict={net.y_MAG_ph: y_MAG,
-                                              net.x_PHA_ph: input_feat[2],
-                                              net.nframes_ph: input_feat[1],
-                                              net.training_ph: False}))
-    if np.isnan(y).any():
-        ValueError('NaN values found in enhanced speech.')
-    if np.isinf(y).any():
-        ValueError('Inf values found in enhanced speech.')
-    utils.save_wav(out_path + '/' + test_fnames[j] + '.wav', 16000, y)
+    test_x, test_x_len, test_snr, test_fnames = Batch("audio/", '*.wav', [])
+    
+    for j in range(len(test_x_len)):
+        input_feat = sess.run(net.infer_feat,
+                              feed_dict={net.s_ph: [test_x[j][0:test_x_len[j]]],
+                                         net.s_len_ph: [
+                                             test_x_len[j]]})  # sample of training set.
+    
+        xi_mapped_hat = sess.run(net.infer_output, feed_dict={net.input_ph: input_feat[0],
+                                                              net.nframes_ph: input_feat[1],
+                                                              net.training_ph: False})
+        xi_dB_hat = np.add(np.multiply(np.multiply(stats['sigma_hat'], np.sqrt(2.0)),
+                                       spsp.erfinv(np.subtract(np.multiply(2.0, 
+                                                                           xi_mapped_hat), 1))),
+                           stats['mu_hat'])
+        xi_hat = np.power(10.0, np.divide(xi_dB_hat, 10.0))
+    
+        y_MAG = np.multiply(input_feat[0], gain.gfunc(xi_hat, xi_hat + 1, gtype='mmse-lsa'))
+        y = np.squeeze(sess.run(net.y, feed_dict={net.y_MAG_ph: y_MAG,
+                                                  net.x_PHA_ph: input_feat[2],
+                                                  net.nframes_ph: input_feat[1],
+                                                  net.training_ph: False}))
+        if np.isnan(y).any():
+            ValueError('NaN values found in enhanced speech.')
+        if np.isinf(y).any():
+            ValueError('Inf values found in enhanced speech.')
+        utils.save_wav(out_path + '/' + test_fnames[j] + '.wav', 16000, y)
 
