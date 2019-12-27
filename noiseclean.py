@@ -97,7 +97,7 @@ out_path = f'{root_path}/tmp'
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 
-test_x, test_x_len, test_snr, test_fnames = Batch("/home/anhbn/PycharmProjects/speech_server/audio/", '*.wav', [])
+test_x, test_x_len, test_snr, test_fnames = Batch("audio/", '*.wav', [])
 
 for j in range(len(test_x_len)):
     input_feat = sess.run(net.infer_feat,
